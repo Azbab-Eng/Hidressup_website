@@ -1,7 +1,9 @@
 import asyncHandler from 'express-async-handler'
 import generateToken from '../utils/generateToken.js'
 import User from '../model/userSchema.js'
+import {sendOtp,generateOtp} from '../utils/mailer.js'
 import bcrypt from 'bcryptjs'
+import { Router } from 'express'
 
 // @desc Auth user & get token
 // @route POST /api/users/login
@@ -10,24 +12,26 @@ const authUser = asyncHandler(async (req, res) => {
     
     const {email, password} = req.body
 
-    const user = await User.findOne({ email })
+    try{
+        const user = await User.findOne({email})
+        if(!user) return res.status(400).json({message:"User not found"})
+        if(!user.isVerified) return res.status(403).json({message:"Please verify your Email first"})
 
-    if(user && (await user.matchPassword(password))){
-         res.json({
-             _id: user._id,
-             name: user.name,
-             email: user.email,
-             no: user.no,
-             isAdmin: user.isAdmin,
-             token:generateToken(user._id)
-         })
-    
-    }else{
-        res.status(401)
-        throw new Error('Invalid email or password');
+        const isMatch = await bcrypt.compare(password,user.password)
+        if(!isMatch) return res.status(400).json({message:"Invalid Password"})
+
+            res.json({message:"Login Successful",
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                no: user.no,
+                isAdmin: user.isAdmin,
+                token:generateToken(user._id)
+            })
+    }catch(err){
+        res.status(500).json({error:err.message})
     }
-    
-    
+        
 })
 
 
@@ -38,39 +42,53 @@ const authUser = asyncHandler(async (req, res) => {
 const registerUser = asyncHandler(async (req, res) => {
     
     const {name, email, password, no} = req.body
-    if(!email && !password){res.status(400).json({"message":"Email and Password are required"})}
-    const userExists = await User.findOne({ email })
 
-   if(userExists){
-       res.status(400)
-       throw new Error('User already exists');
-   }
-   const hashPassword = await bcrypt.hash(password,12)
-   const user = await User.create({
-       name,
-       email,
-       hashPassword,
-       no
-   })
-   
-   if(user){
-    res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        no: user.no,
-        // password:user.password,
-        isAdmin: user.isAdmin,
-        token:generateToken(user._id)
-    })
-   }else{
-        res.status(400)
-        throw new Error('Invalid user data')
-   }
+    try{
+        const userExists = await User.findOne({ email })
+
+        if(userExists){
+            res.status(400)
+            throw new Error('User already exists');
+        }
+        const hashPassword = await bcrypt.hash(password,12)
+        const otp = generateOtp()
+        const otpExpiredAt = new Date(Date.now() + 10 * 60 * 1000)
+
+        const user = await User.create({
+            name,
+            email,
+            password:hashPassword,
+            no,
+            otp,
+            otpExpiredAt
+        })
+        
+        await sendOtp(email,otp)
+        res.status(201).json({'message':`OTP sent to your email : ${email}` })
+    } catch(err){
+        res.status(500).json({'error':err.message})
+    }
     
 })
 
+const verifyEmail = asyncHandler(async(req,res)=>{
+    const {email,otp} = req.body
 
+    try{
+        const user = User.findOne({email})
+
+        if(!user) return res.status(400).json({message:"Invalid OTP"})
+        if(user.otpExpiredAt < new Date()) return res.status(400).json({message:"otp expired"})
+        
+            user.isVerified = true
+            user.otp = null
+            user.otpExpiredAt = null
+            await user.save()
+            res.status(201).json({message:"Email Verification Successful "})
+    }catch(err){
+        res.status(500).json({error:err.message})
+    }
+})
 
 // @desc Get user profile
 // @route GET /api/users/profile
@@ -212,4 +230,4 @@ const logged = asyncHandler((req,res)=>{
 
 console.log('Yes User control working well')
 
-export {logged, authUser, getUserProfile, registerUser, updateUserProfile,getUsers,deleteUser,getUserByID,updateUser}
+export {verifyEmail,logged, authUser, getUserProfile, registerUser, updateUserProfile,getUsers,deleteUser,getUserByID,updateUser}
