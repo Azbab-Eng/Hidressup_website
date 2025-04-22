@@ -215,4 +215,4 @@ const deleteUser = asyncHandler(async (req, res) => {
 
 console.log('Yes User control working well')
 
-export {verifyEmail,logged, authUser, getUserProfile, registerUser, updateUserProfile,getUsers,deleteUser,getUserByID,updateUser}
+export {verifyEmail, authUser, getUserProfile, registerUser, updateUserProfile,getUsers,deleteUser,getUserByID,updateUser}
