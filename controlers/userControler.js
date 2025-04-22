@@ -14,7 +14,7 @@ const authUser = asyncHandler(async (req, res) => {
 
     try{
         const user = await User.findOne({email})
-        if(!user) return res.status(400).json({message:"User not found"})
+        if(!user) return res.status(400).json({message:"User not found \nGo to Register Page"})
         if(!user.isVerified) return res.status(403).json({message:"Please verify your Email first"})
 
         const isMatch = await bcrypt.compare(password,user.password)
@@ -46,10 +46,7 @@ const registerUser = asyncHandler(async (req, res) => {
     try{
         const userExists = await User.findOne({ email })
 
-        if(userExists){
-            res.status(400)
-            throw new Error('User already exists');
-        }
+        if(userExists){ res.status(400).json({message:'User already exists'})}
         const hashPassword = await bcrypt.hash(password,12)
         const otp = generateOtp()
         const otpExpiredAt = new Date(Date.now() + 10 * 60 * 1000)
@@ -64,9 +61,9 @@ const registerUser = asyncHandler(async (req, res) => {
         })
         
         await sendOtp(email,otp)
-        res.status(201).json({'message':`OTP sent to your email : ${email}` })
+        res.status(201).json({message:`OTP sent to your email : ${email}` })
     } catch(err){
-        res.status(500).json({'error':err.message})
+        res.status(500).json({error:err.message})
     }
     
 })
@@ -107,10 +104,8 @@ const getUserProfile = asyncHandler(async (req, res) => {
         
     })
     }else{
-        res.status(404)
-        throw new Error('User not found')
+        res.status(404).json({error:"User not found"})
     }
-    
     
 })
 
@@ -141,8 +136,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         })
 
     }else{
-        res.status(404)
-        throw new Error('User not found')
+        res.status(404).json({error:"User not found"})
     }
     
     
@@ -172,8 +166,7 @@ const updateUser = asyncHandler(async (req, res) => {
             
             })
     }else{
-        res.status(404)
-        throw new Error('User not found')
+        res.status(404).json({error:"User not found"})
     }
     
     
@@ -187,8 +180,6 @@ const getUsers = asyncHandler(async (req, res) => {
     const users = await User.find({})
     res.json(users)
 
-    
-    
 })
 // @desc Get user by ID
 // @route GET /api/users/:id
@@ -200,8 +191,7 @@ const getUserByID = asyncHandler(async (req, res) => {
         res.json(user)
         console.log(user)
     }else{
-        res.status(404)
-        throw new Error('User not found')
+        res.status(404).json({error:"User not found"})
     }
 
     
@@ -217,16 +207,11 @@ const deleteUser = asyncHandler(async (req, res) => {
         await user.remove()
         res.json({message : 'User removed'})
     }else{
-        res.status(404)
-        throw new Error('User not found')
+        res.status(400).json({error:'User not found'})
     }
     
     
 })
-const logged = asyncHandler((req,res)=>{
-    res.json({message:"IT IS WORKING FOR /LOGIN"})
-})
-
 
 console.log('Yes User control working well')
 
