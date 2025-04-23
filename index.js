@@ -7,8 +7,8 @@ import { config } from "dotenv"
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
-
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+
 
 
 config()
@@ -51,7 +51,6 @@ if(process.env.NODE_ENV === "production"){
         res.send("API is Running.....")
     })
 }
-
 
 app.use(notFound);
 app.use(errorHandler);
