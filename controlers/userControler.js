@@ -72,13 +72,13 @@ const verifyEmail = asyncHandler(async(req,res)=>{
     const {email,otp} = req.body
 
     try{
-        const user = User.findOne({email})
-
-        if(!user) return res.status(400).json({message:"Invalid OTP"})
-        if(user.otpExpiredAt < new Date()) return res.status(400).json({message:"otp expired"})
+        const user = await User.findOne({email,otp})
+        
+        if(!user) return res.status(400).json({message:"Invalid OTP or Email"})
+        if(user.otpExpiredAt < new Date()) return res.status(400).json({message:"OTP expired"})
         
             user.isVerified = true
-            user.otp = null
+            user.otp = null 
             user.otpExpiredAt = null
             await user.save()
             res.status(201).json({message:"Email Verification Successful "})
@@ -91,9 +91,9 @@ const verifyEmail = asyncHandler(async(req,res)=>{
 // @route GET /api/users/profile
 // @access Private
 const getUserProfile = asyncHandler(async (req, res) => {
-    
+    // const userId = req.user._id
+    // const user = await User.findById(userId).select('-password')
     const user = await User.findById(req.user._id)
-
     if(user){
         res.json({
         _id: user._id,
@@ -213,6 +213,5 @@ const deleteUser = asyncHandler(async (req, res) => {
     
 })
 
-console.log('Yes User control working well')
 
 export {verifyEmail, authUser, getUserProfile, registerUser, updateUserProfile,getUsers,deleteUser,getUserByID,updateUser}
