@@ -4,6 +4,7 @@ import User from '../model/userSchema.js'
 import {sendOtp,generateOtp} from '../utils/mailer.js'
 import bcrypt from 'bcryptjs'
 import { Router } from 'express'
+import mongoose from 'mongoose'
 
 // @desc Auth user & get token
 // @route POST /api/users/login
@@ -121,6 +122,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         user.name = req.body.name || user.name
         user.email = req.body.email || user.email
         user.no = req.body.no || user.no
+        // user.isAdmin = req.body.isAdmin || user.isAdmin
         if(req.body.password){
             user.password = req.body.password || user.password
         }
@@ -185,7 +187,10 @@ const getUsers = asyncHandler(async (req, res) => {
 // @route GET /api/users/:id
 // @access Private/admin
 const getUserByID = asyncHandler(async (req, res) => {
-    
+    const {id} = req.params
+    if(!mongoose.Types.ObjectId.isValid(id)){
+        return res.status(400).json({error:"Invalid User ID"})
+    }
     const user = await User.findById(req.params.id).select('-password')
     if(user){
         res.json(user)
@@ -204,7 +209,7 @@ const deleteUser = asyncHandler(async (req, res) => {
     
     const user = await User.findById(req.params.id)
     if(user){
-        await user.remove()
+        await user.deleteOne()
         res.json({message : 'User removed'})
     }else{
         res.status(400).json({error:'User not found'})
