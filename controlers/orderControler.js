@@ -1,4 +1,4 @@
- import asyncHandler from 'express-async-handler'
+import asyncHandler from 'express-async-handler'
 
 import Order from '../model/orderSchema.js'
 
@@ -8,7 +8,7 @@ import Order from '../model/orderSchema.js'
 const addorderitems = asyncHandler(async (req, res) => {
     console.log(req.user)
 
-    const {orderItems,deliveryAddress,paymentMethod,itemsPrice,totalPrice} = req.body
+    const {orderItems,shippingAddress,paymentMethod,itemsPrice,shippingPrice,totalPrice} = req.body
     if(orderItems && orderItems.length === 0){
         res.status(400)
         throw new Error('No order items')
@@ -17,9 +17,10 @@ const addorderitems = asyncHandler(async (req, res) => {
         const order = new Order({
             user:req.user._id,
             orderItems,
-            deliveryAddress,
+            shippingAddress,
             paymentMethod,
             itemsPrice,
+            shippingPrice,
             totalPrice
         })
         const createdOrder = await order.save()
@@ -43,48 +44,45 @@ const getOrderById = asyncHandler(async (req, res) => {
     // @desc update order to paid
     // @route update /api/orders/:id/pay
     // @access Private
-// const updateOrderToPaid = asyncHandler(async (req, res) => {
-//     const order  = await Order.findById(req.params.id)
-//     if(order){
-//         order.isPaid = true
-//         order.paidAt = Date.now()
-//         order.paymentResult = {
-//             id: req.body.id,
-//             status: req.body.status,
-//             update_time: req.body.update_time,
-//             email_address: req.body.payer.email_address,
+const updateOrderToPaid = asyncHandler(async (req, res) => {
+    const order  = await Order.findById(req.params.id)
+    if(order){
+        order.isPaid = true
+        order.paidAt = Date.now()
+        order.paymentResult = {
+            id: req.body.id,
+            status: req.body.status,
+            update_time: req.body.update_time,
+            email_address: req.body.payer.email_address
+        }
+        const updatedOrder = await order.save()
+        res.json(updatedOrder)
 
-//         }
-//         const updatedOrder = await order.save()
-//         res.json(updatedOrder)
-
-//     }else{
-//         res.status(404)
-//         throw new Error('Order Not found')
-//     }
+    }else{
+        res.status(404)
+        throw new Error('Order Not found')
+    }
     
-// })
+})
 
 
 // @desc update order to delivered
     // @route update /api/orders/:id/deliver
     // @access Private
-    // const updateOrderToDelivered = asyncHandler(async (req, res) => {
-    //     const order  = await Order.findById(req.params.id)
-    //     if(order){
-    //         order.isDelivered = true
-    //         order.deliveredAt = Date.now()
-    //         const updatedOrder = await order.save()
-    //         res.json(updatedOrder)
+    const updateOrderToDelivered = asyncHandler(async (req, res) => {
+        const order  = await Order.findById(req.params.id)
+        if(order){
+            order.isDelivered = true
+            order.deliveredAt = Date.now()
+            const updatedOrder = await order.save()
+            res.json(updatedOrder)
     
-    //     }else{
-    //         res.status(404)
-    //         throw new Error('Order Not found')
-    //     }
+        }else{
+            res.status(404)
+            throw new Error('Order Not found')
+        }
         
-    // })
-
-
+    })
     // @desc get logged in user orders
     // @route GET /api/orders/myorders
     // @access Private
@@ -97,15 +95,10 @@ const GetMyOrders = asyncHandler(async (req, res) => {
 // @desc get orders
     // @route GET /api/admin/orders
     // @access Private/admin
-    const GetOrders = asyncHandler(async (req, res) => {
+const GetOrders = asyncHandler(async (req, res) => {
         const orders  = await Order.find({}).populate('user','id name')
         res.json(orders)
         
     })
 
-    console.log('Order is working well')
-    
-export {addorderitems,getOrderById,GetMyOrders,GetOrders}
-
-// updateOrderToDelivered
-// updateOrderToPaid
+export {addorderitems,getOrderById,updateOrderToPaid,GetMyOrders,GetOrders,updateOrderToDelivered}
