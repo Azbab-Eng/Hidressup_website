@@ -38,6 +38,9 @@ app.use(express.json())
 app.use("/products", productRoutes);
 app.use("/users", userRoutes);
 app.use("/orders", orderRoutes);
+app.get("/api/config/paypal", (req, res) =>
+    res.send(process.env.CLIENT_ID)
+  );
 
 const __dirname = path.resolve()
 
