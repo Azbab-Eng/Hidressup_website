@@ -79,7 +79,7 @@ const getProductById = asyncHandler(async (req, res) => {
 const deleteProduct = asyncHandler(async (req, res) => {
     const product =  await Product.findById(req.params.id)
     if(product){
-        await product.remove()
+        await product.deleteOne()
         res.json({message : 'Product Removed'})
     } else{
         // status it's 500 by default cuz of errHandler
@@ -92,39 +92,41 @@ const deleteProduct = asyncHandler(async (req, res) => {
 // @route Post /api/products
 // @access Private/Admin
 const createProduct = asyncHandler(async (req, res) => {
-
+    const {name,price,description,sizes,images,category,countInStock} = req.body
     const product = new Product({
-        name : req.body.name,
-        price : req.body.price,
-        description : req.body.description,
-        sizes : req.body,
-        images : req.body.images,
-        category : req.body.category,
-        countInStock :  req.body.countInStock,
-
+        user:req.user,
+        name,
+        price, 
+        description,      
+        sizes, 
+        images,  
+        category,    
+        countInStock, 
     })
-    const createProduct = await product.save();
-    res.status(201).json(createProduct)
+    
+    const createdProduct = await product.save();
+    res.status(201).json(createdProduct)
 })
 
 // @desc Update a product
 // @route PUT /api/products/:id
 // @access Private/Admin
 const updateProduct = asyncHandler(async (req, res) => {
-    const {name,price,description,category,sizes,Images,countInStock} = req.body
-    console.log(name,price,Images)
+    const {name,price,description,category,sizes,images,countInStock} = req.body
+    
     const product = await Product.findById(req.params.id)
     if(product){
-        product.name = name
-        product.price = price
-        product.description = description
-        product.category = category
-        product.sizes = sizes
-        product.images = Images
-        product.countInStock = countInStock 
+        product.name = name || product.name
+        product.price = price || product.price
+        product.description = description || product.description
+        product.category = category || product.category
+        product.sizes = sizes || product.sizes
+        product.images = images || product.images
+        product.countInStock = countInStock || product.countInStock
+
     const updatedProduct = await product.save();
-    console.log(updatedProduct)
-    res.json(updateProduct)
+    
+    res.json(updatedProduct)
 
     }else{
         res.status(404)
@@ -162,7 +164,6 @@ const updateProduct = asyncHandler(async (req, res) => {
 //     }
 // })
 
-console.log('Yes Product Control is working')
 export {
     getProducts, getProductById,deleteProduct,createProduct,updateProduct
 }
