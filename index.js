@@ -1,13 +1,14 @@
-import path from "path"
+import path, { dirname } from "path"
 import express from "express"
 import mongose from "mongoose"
 import morgan from "morgan"
-import dotenv from "dotenv"
 import { config } from "dotenv"
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+import cors from "cors"
+import { fileURLToPath } from "url"
 
 
 
@@ -32,17 +33,23 @@ const app = express()
 if (process.env.NODE_ENV === "development"){
     app.use(morgan("dev"))
 }
-
+app.use(cors())
 app.use(express.json())
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+app.use('/uploads',
+    express.static(path.join(__dirname,'./uploads')))
 
 app.use("/products", productRoutes);
 app.use("/users", userRoutes);
 app.use("/orders", orderRoutes);
-app.get("/api/config/paypal", (req, res) =>
+app.get("/config/paypal", (req, res) =>
     res.send(process.env.CLIENT_ID)
   );
 
-const __dirname = path.resolve()
+  
+// const __dirname = path.resolve()
 
 if(process.env.NODE_ENV === "production"){
     app.use(express.static(path.join(__dirname,"/frontend/build")))

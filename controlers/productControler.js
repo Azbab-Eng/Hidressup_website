@@ -1,169 +1,168 @@
-import asyncHandler from 'express-async-handler'
+import asyncHandler from 'express-async-handler';
+import Product from '../model/productSchema.js';
+import multer from 'multer';
+import path from 'path';
 
-import Product from '../model/productSchema.js'
+// Storage setup
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename(req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+// Middleware export for route use
+const uploadImages = upload.array('images', 3);
 
 // @desc Fetch all products
-// @route GET /api/products
-// @access Public
 const getProducts = asyncHandler(async (req, res) => {
-    const Cg = req.query.Cg
-    const filter = req.query.filter
-    const from = req.query.from
-    const to = req.query.to
-    const keyword = req.query.keyword ? {
-        name : {
-            $regex : req.query.keyword,
-            $options : 'i'
-        }
-    } : {}
-    
-    console.log(req.query.keyword)
+  const { Cg, filter, from, to, keyword: search } = req.query;
 
-    if(Cg){
-        const products =  await Product.find({category : Cg});
-        res.json(products)
+  const keyword = search
+    ? { name: { $regex: search, $options: 'i' } }
+    : {};
 
+  if (Cg) {
+    const products = await Product.find({ category: Cg });
+    return res.json(products);
+  }
+
+  if (filter) {
+    let sortBy;
+    switch (filter) {
+      case 'date':
+        sortBy = 'createdAt';
+        break;
+      case 'highprice':
+        sortBy = 'price';
+        break;
+      case 'lowprice':
+        sortBy = '-price';
+        break;
+      default:
+        sortBy = null;
     }
-    else if(filter){
-        switch (filter) {
 
-            case 'date':
-                const productsbydate =  await Product.find({}).sort('createdAt').exec();
-                res.json(productsbydate)
-                    break;
+    const products = await Product.find().sort(sortBy);
+    return res.json(products);
+  }
 
-            case 'highprice':
-                const productsbyhighprice =  await Product.find({}).sort('price');
-                res.json(productsbyhighprice)
-                    break;
-                    
-            case 'lowprice':
-                const productsbylowprice =  await Product.find({}).sort('-price').exec();
-                res.json(productsbylowprice)
-                    break;
-        
-            default:
-                break;
-        }
-    }else if(from && to){
-        const productbyprice =  await Product.find({price:{$lte:to},price:{$gte:from}});
-        res.json(productbyprice)
+  if (from && to) {
+    const products = await Product.find({
+      $and: [{ price: { $gte: from } }, { price: { $lte: to } }],
+    });
+    return res.json(products);
+  }
 
-    }else{
-        const products =  await Product.find({...keyword});
-        res.json(products)
+  const products = await Product.find({ ...keyword });
+  res.json(products);
+});
 
-    }
-})
-
-
-
-
-// @desc Fetch single  product
-// @route GET /api/products/:id
-// @access Public
+// @desc Get single product
 const getProductById = asyncHandler(async (req, res) => {
-    const product =  await Product.findById(req.params.id)
-    if(product){
-        res.json(product)
-    } else{
-        // status it's 500 by default cuz of errHandler
-        res.status(404)
-        throw new Error('Product not found')
-    }
-})
+  const product = await Product.findById(req.params.id);
+  if (product) {
+    res.json(product);
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+});
 
 // @desc Delete a product
-// @route GET /api/products/:id
-// @access Private/Admin
 const deleteProduct = asyncHandler(async (req, res) => {
-    const product =  await Product.findById(req.params.id)
-    if(product){
-        await product.deleteOne()
-        res.json({message : 'Product Removed'})
-    } else{
-        // status it's 500 by default cuz of errHandler
-        res.status(404)
-        throw new Error('Product not found')
-    }
-})
+  const product = await Product.findById(req.params.id);
+  if (product) {
+    await product.deleteOne();
+    res.json({ message: 'Product Removed' });
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+});
 
-// @desc Create a product
-// @route Post /api/products
-// @access Private/Admin
-const createProduct = asyncHandler(async (req, res) => {
-    const {name,price,description,sizes,images,category,countInStock} = req.body
-    const product = new Product({
-        user:req.user,
-        name,
-        price, 
-        description,      
-        sizes, 
-        images,  
-        category,    
-        countInStock, 
-    })
-    
+// @desc Create product
+const createProduct = asyncHandler( async (req, res) => {
+  const {
+    name,
+    price,
+    description,
+    sizes,
+    category,
+    countInStock,
+  } = req.body;
+
+  const parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
+  const parsedCategory = typeof category === 'string' ? JSON.parse(category) : category;
+
+  const images = req.files?.map(file => `uploads/${file.filename}`) || [];
+//   const images = req.files?.map(file => file.path) || [];
+
+  const product = new Product({
+    user: req.user,
+    name,
+    price,
+    description,
+    sizes: parsedSizes,
+    category: parsedCategory,
+    countInStock,
+    images,
+  });
+
+  if (product) {
+    console.log(product.images)
     const createdProduct = await product.save();
-    res.status(201).json(createdProduct)
-})
+    res.status(201).json(createdProduct);
+  } else {
+    res.status(400).json({ error: 'Product not provided' });
+  }
+});
 
-// @desc Update a product
-// @route PUT /api/products/:id
-// @access Private/Admin
+// @desc Update product
 const updateProduct = asyncHandler(async (req, res) => {
-    const {name,price,description,category,sizes,images,countInStock} = req.body
-    
-    const product = await Product.findById(req.params.id)
-    if(product){
-        product.name = name || product.name
-        product.price = price || product.price
-        product.description = description || product.description
-        product.category = category || product.category
-        product.sizes = sizes || product.sizes
-        product.images = images || product.images
-        product.countInStock = countInStock || product.countInStock
+  const {
+    name,
+    price,
+    description,
+    category,
+    sizes,
+    countInStock,
+  } = req.body;
+
+  const parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
+  const parsedCategory = typeof category === 'string' ? JSON.parse(category) : category;
+
+  const images = req.files?.map(file => `uploads/${file.filename}`);
+
+  const product = await Product.findById(req.params.id);
+  if (product) {
+    product.name = name || product.name;
+    product.price = price || product.price;
+    product.description = description || product.description;
+    product.category = parsedCategory || product.category;
+    product.sizes = parsedSizes || product.sizes;
+    product.countInStock = countInStock || product.countInStock;
+    if (images && images.length > 0) {
+      product.images = images;
+    }
 
     const updatedProduct = await product.save();
-    
-    res.json(updatedProduct)
-
-    }else{
-        res.status(404)
-        throw new Error('Product Not found')
-    }
-})
-
-// @desc Create new Review
-// @route PUT /api/products/:id/reviews
-// @access Private
-// const createproductreview = asyncHandler(async (req, res) => {
-//     const {rating,comment} = req.body
-//     const product = await Product.findById(req.params.id)
-//     if(product){
-//         const alreadyReviewed = product.reviews.find(r => r.user.toString() === req.user._id.toString()) 
-//         if(alreadyReviewed){
-//             res.status(404)
-//             throw new Error('Product Already Review')
-
-//         }
-//         const review = {
-//             name : req.user.name,
-//             rating : Number(rating),
-//             comment,
-//             user : req.user._id
-//         }
-//         product.reviews.push(review)
-//         product.numReviews = product.reviews.length
-//         product.rating =product.reviews.reduce((acc,item)=> item.rating+acc,0)/product.reviews.length
-//         await product.save()
-//         res.status(201).json({message : 'Review added'})
-//     }else{
-//         res.status(404)
-//         throw new Error('Product Not found')
-//     }
-// })
+    res.json(updatedProduct);
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+});
 
 export {
-    getProducts, getProductById,deleteProduct,createProduct,updateProduct
-}
+  getProducts,
+  getProductById,
+  deleteProduct,
+  createProduct,
+  updateProduct,
+  uploadImages,
+};

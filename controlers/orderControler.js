@@ -7,7 +7,7 @@ import Order from '../model/orderSchema.js'
 // @access Private
 const addorderitems = asyncHandler(async (req, res) => {
     console.log(req.user)
-
+    
     const {orderItems,shippingAddress,paymentMethod,itemsPrice,shippingPrice,totalPrice} = req.body
     if(orderItems && orderItems.length === 0){
         res.status(400)
@@ -24,8 +24,9 @@ const addorderitems = asyncHandler(async (req, res) => {
             totalPrice
         })
         const createdOrder = await order.save()
-
-        res.status(201).json(createdOrder)
+        const orderd  = await Order.findById(order._id).populate('user','name email')
+        // res.status(201).json(createdOrder)
+        res.status(201).json(orderd)
     }
 })
     // @desc get order by id
@@ -96,7 +97,7 @@ const GetMyOrders = asyncHandler(async (req, res) => {
     // @route GET /api/admin/orders
     // @access Private/admin
 const GetOrders = asyncHandler(async (req, res) => {
-        const orders  = await Order.find({}).populate('user','id name')
+        const orders  = await Order.find({}).populate('user','name email')
         res.json(orders)
         
     })

@@ -34,6 +34,8 @@ const importData = async () => {
         process.exit(1)
     }
 }
+
+importData()
 const destroyData = async () => {
     try {
         // empty all models 
@@ -50,7 +52,7 @@ const destroyData = async () => {
 
 //node backend/seeder -d
 if(process.argv[2] === '-d'){
-    destroyData()
+    // destroyData()
 } else{
-    importData()
+    // importData()
 }

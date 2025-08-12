@@ -124,7 +124,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         user.no = req.body.no || user.no
         // user.isAdmin = req.body.isAdmin || user.isAdmin
         if(req.body.password){
-            user.password = req.body.password || user.password
+            const hashPassword = await bcrypt.hash(req.body.password,12)
+            user.password = hashPassword || user.password
         }
 
         const updatedUser = await user.save()
