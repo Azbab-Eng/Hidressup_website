@@ -1,6 +1,6 @@
 import path, { dirname } from "path"
 import express from "express"
-import mongose from "mongoose"
+import mongoose from "mongoose"
 import morgan from "morgan"
 import { config } from "dotenv"
 import userRoutes from "./routes/userRoutes.js";
@@ -15,12 +15,12 @@ import { fileURLToPath } from "url"
 config()
 const DB_connection = async ()=>{
     try{
-        const connection = await mongose.connect(process.env.DATA_BASE,{
+        const connection = await mongoose.connect(process.env.DATA_BASE,{
             useUnifiedTopology:true,
             useNewUrlParser:true,
             // useCreateIndex:true
         })
-        console.log(`MongoDB connected: ${connection.connection.host}`)
+        console.log(`MongoDB connected: ${connection.connection.host} `)
     } catch (error){
         console.log(`Error: ${error.message}`)
             process.exit(1)
@@ -52,13 +52,12 @@ app.get("/config/paypal", (req, res) =>
 // const __dirname = path.resolve()
 
 if(process.env.NODE_ENV === "production"){
-    app.use(express.static(path.join(__dirname,"/frontend/build")))
-    app.get("*",(req,res)=>{
-        res.sendFile(path.resolve(__dirname,"/frontend/build"))
+   app.get("/", (req,res)=>{
+        res.send("API is Running..... on PRODUCTION MODE")
     })
 }else{
     app.get("/", (req,res)=>{
-        res.send("API is Running.....")
+        res.send("API is Running..... on DEVELOPMENT MODE")
     })
 }
 
