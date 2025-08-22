@@ -9,7 +9,7 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename(req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
   },
 });
 
@@ -99,7 +99,7 @@ const createProduct = asyncHandler( async (req, res) => {
   const parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
   const parsedCategory = typeof category === 'string' ? JSON.parse(category) : category;
 
-  const images = req.files?.map(file => `uploads/${file.filename}`) || [];
+  const images = req.files?.map(file => `${req.protocol}://${req.get("host")}/uploads/${file.filename}`) || [];
 //   const images = req.files?.map(file => file.path) || [];
 
   const product = new Product({

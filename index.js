@@ -39,7 +39,7 @@ app.use(express.json())
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 app.use('/uploads',
-    express.static(path.join(__dirname,'./uploads')))
+    express.static(path.join(__dirname,'uploads')))
 
 app.use("/products", productRoutes);
 app.use("/users", userRoutes);
@@ -50,7 +50,9 @@ app.get("/config/paypal", (req, res) =>
 
   
 // const __dirname = path.resolve()
-
+app.use((req,res,next)=>{
+    res.status(404).json({message:"API route not found"})
+})
 if(process.env.NODE_ENV === "production"){
    app.get("/", (req,res)=>{
         res.send("API is Running..... on PRODUCTION MODE")
@@ -67,4 +69,4 @@ app.use(errorHandler);
 
 
 const PORT = process.env.PORT || 8000
-app.listen(PORT,console.log(`App is running in ${PORT}`))
+app.listen(PORT,console.log(`App is running in ${PORT} on ${process.env.NODE_ENV}`))
