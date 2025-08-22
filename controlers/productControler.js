@@ -136,7 +136,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   const parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
   const parsedCategory = typeof category === 'string' ? JSON.parse(category) : category;
 
-  const images = req.files?.map(file => `uploads/${file.filename}`);
+  const images = req.files?.map(file => `${req.protocol}://${req.get("host")}/uploads/${file.filename}`) || [];
 
   const product = await Product.findById(req.params.id);
   if (product) {

@@ -10,8 +10,8 @@ const Users = [
     },
     {
         name : 'Babalola Ibrahim',
-        email : 'hidressupibadan',
-        password : bcrypt.hashSync('souhail2020',12),
+        email : 'hidressupibadan@gmail.com',
+        password : bcrypt.hashSync('client',12),
         isAdmin : true,
         no : 8165732866,
         isVerified:true
