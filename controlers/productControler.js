@@ -2,16 +2,36 @@ import asyncHandler from 'express-async-handler';
 import Product from '../model/productSchema.js';
 import multer from 'multer';
 import path from 'path';
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
-// Storage setup
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename(req, file, cb) {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export default cloudinary;
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "ecommerce_uploads",  // name of folder in Cloudinary
+    allowed_formats: ["jpg", "png", "jpeg", "webp"], // restrict formats
   },
 });
+
+
+
+// Storage setup
+// const storage = multer.diskStorage({
+//   destination(req, file, cb) {
+//     cb(null, 'uploads/');
+//   },
+//   filename(req, file, cb) {
+//     cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+//   },
+// });
 
 const upload = multer({ storage });
 
@@ -99,7 +119,7 @@ const createProduct = asyncHandler( async (req, res) => {
   const parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
   const parsedCategory = typeof category === 'string' ? JSON.parse(category) : category;
 
-  const images = req.files?.map(file => `${req.protocol}://${req.get("host")}/uploads/${file.filename}`) || [];
+  const images = req.files?.map(file => file.path) || [];
 //   const images = req.files?.map(file => file.path) || [];
 
   const product = new Product({
@@ -136,7 +156,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   const parsedSizes = typeof sizes === 'string' ? JSON.parse(sizes) : sizes;
   const parsedCategory = typeof category === 'string' ? JSON.parse(category) : category;
 
-  const images = req.files?.map(file => `${req.protocol}://${req.get("host")}/uploads/${file.filename}`) || [];
+  const images = req.files?.map(file => file.path);
 
   const product = await Product.findById(req.params.id);
   if (product) {
